@@ -34,29 +34,35 @@ export default function Home() {
 
     setLoading(true)
 
-    const normalizedInput = ndc.replace(/-/g, "").trim()
+    try {
 
-    // Query by ndc_digits only
-    const { data, error } = await supabase
-      .from("ndc_data")
-      .select('"NDC", "ADDRESS", "nda"')
-      .eq('ndc_digits', normalizedInput)
+      var hasLetters = /[a-zA-Z]/g;
+      if (hasLetters.test(ndc)) throw new Error("NDC labels should only contain digits")
+      
+      var stringInput = ndc.replace(/-/g, "").trim()
+      if (stringInput.length != 10) throw new Error("NDC labels are 10 digits")
 
-    console.log("Supabase data:", data)
-    console.log("Supabase error:", error)
+      // Query by ndc_digits only
+      const { data, dataFailure } = await supabase
+        .from("ndc_data")
+        .select('"NDC", "ADDRESS", "nda"')
+        .eq('ndc_digits', stringInput)
 
-    if (error) {
-      console.error(error)
-      setError("Error fetching data.")
-    } else if (data.length === 0) {
-      setError("No match found.")
-    } else {
-      // ✅ use the same casing returned by Supabase:
+      if (dataFailure) throw new Error("Internal Server Error")
+      else if (data.length === 0) throw new Error("No Address Found")
+
+      // Update Address and NDC states
       setAddress(data[0].ADDRESS)
       setMatchedNdc(data[0].NDC)
 
+
+    }
+    catch(error) {
+      setError(error.message)
+    }
+
       // Fetch relevant NDCs with the same NDA value
-      if (data[0].nda) {
+      /*if (data[0].nda) {
         const { data: relevantData, error: relevantError } = await supabase
           .from("ndc_data")
           .select('"NDC"')
@@ -67,7 +73,7 @@ export default function Home() {
           setRelevantNdcs(relevantData.map(item => item.NDC))
         }
       }
-    }
+    }*/
 
     setLoading(false)
   }
@@ -121,7 +127,7 @@ export default function Home() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
-                    placeholder="Enter NDC number (e.g., 12345-678-90)"
+                    placeholder="12345-678-90"
                     value={ndc}
                     onChange={(e) => setNdc(e.target.value)}
                     onKeyPress={handleKeyPress}
