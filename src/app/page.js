@@ -131,6 +131,8 @@ export default function Home() {
 
         if (data && data.length > 0) {
           allResults = [...allResults, ...data]
+          // break to avoid 11 digit NDCs from checking 10 digits ones
+          break;
         }
 
         currentNDC = currentNDC.slice(0, -1)
